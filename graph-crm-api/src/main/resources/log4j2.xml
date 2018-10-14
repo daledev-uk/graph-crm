@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="ConsoleJSONAppender" target="SYSTEM_OUT">
+            <JsonLayout complete="false" compact="false">
+                <KeyValuePair key="application" value="graphCrm"/>
+            </JsonLayout>
+        </Console>
+    </Appenders>
+
+    <Logger name="CONSOLE_JSON_APPENDER" level="TRACE" additivity="false">
+        <AppenderRef ref="ConsoleJSONAppender"/>
+    </Logger>
+</Configuration>
