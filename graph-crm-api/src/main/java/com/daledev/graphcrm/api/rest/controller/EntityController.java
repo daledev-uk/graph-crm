@@ -3,6 +3,7 @@ package com.daledev.graphcrm.api.rest.controller;
 import com.daledev.graphcrm.api.dto.detail.EntityDto;
 import com.daledev.graphcrm.api.dto.detail.PersonDto;
 import com.daledev.graphcrm.api.dto.request.CreateEntityRequestDto;
+import com.daledev.graphcrm.api.rest.constants.RestPaths;
 import com.daledev.graphcrm.api.service.EntityService;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
  * @since 01/10/2018
  */
 @RestController
-@RequestMapping("/api/entity")
+@RequestMapping(RestPaths.ENTITY)
 public class EntityController {
 
     private EntityService entityService;

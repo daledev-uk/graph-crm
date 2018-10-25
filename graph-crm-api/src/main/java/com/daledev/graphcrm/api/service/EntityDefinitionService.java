@@ -1,7 +1,9 @@
 package com.daledev.graphcrm.api.service;
 
+import com.daledev.graphcrm.api.domain.EntityDefinition;
 import com.daledev.graphcrm.api.dto.request.CreateEntityDefinitionRequestDto;
 import com.daledev.graphcrm.api.dto.request.CreateEntityRequestDto;
+import com.daledev.graphcrm.api.dto.request.UpdateEntityDefinitionRequestDto;
 
 /**
  * @author dale.ellis
@@ -13,12 +15,19 @@ public interface EntityDefinitionService {
      * and that mandatory fields supplied
      *
      * @param request
+     * @return
      */
-    void validateEntity(CreateEntityRequestDto request);
+    EntityDefinition validateEntity(CreateEntityRequestDto request);
 
     /**
      *
      * @param createRequest
      */
     void createEntityDefinition(CreateEntityDefinitionRequestDto createRequest);
+
+    /**
+     *
+     * @param updateRequest
+     */
+    void updateEntityDefinition(UpdateEntityDefinitionRequestDto updateRequest);
 }

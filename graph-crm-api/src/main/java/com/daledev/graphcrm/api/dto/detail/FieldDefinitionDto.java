@@ -11,6 +11,7 @@ public class FieldDefinitionDto {
     private String description;
     private DataType dataType;
     private boolean mandatory;
+    private String template;
     private EntityRelationshipDefinitionDto representedRelationship;
 
     public String getName() {
@@ -43,6 +44,14 @@ public class FieldDefinitionDto {
 
     public void setMandatory(boolean mandatory) {
         this.mandatory = mandatory;
+    }
+
+    public String getTemplate() {
+        return template;
+    }
+
+    public void setTemplate(String template) {
+        this.template = template;
     }
 
     public EntityRelationshipDefinitionDto getRepresentedRelationship() {

@@ -6,6 +6,7 @@ import com.daledev.graphcrm.api.domain.FieldDefinition;
 import com.daledev.graphcrm.api.dto.detail.FieldDefinitionDto;
 import com.daledev.graphcrm.api.dto.request.CreateEntityDefinitionRequestDto;
 import com.daledev.graphcrm.api.dto.request.CreateEntityRequestDto;
+import com.daledev.graphcrm.api.dto.request.UpdateEntityDefinitionRequestDto;
 import com.daledev.graphcrm.api.exception.EntityDefinitionAlreadyExists;
 import com.daledev.graphcrm.api.exception.EntityDefinitionFieldNotFound;
 import com.daledev.graphcrm.api.exception.EntityDefinitionNotFound;
@@ -41,10 +42,11 @@ public class EntityDefinitionServiceImpl implements EntityDefinitionService {
     }
 
     @Override
-    public void validateEntity(CreateEntityRequestDto request) {
+    public EntityDefinition validateEntity(CreateEntityRequestDto request) {
         EntityDefinition entityDefinition = getEntityDefinitionByName(request.getEntityType());
         validateFieldValues(request.getValues(), entityDefinition);
         validateMandatoryFieldsPopulated(request.getValues(), entityDefinition);
+        return entityDefinition;
     }
 
     @Override
@@ -66,6 +68,23 @@ public class EntityDefinitionServiceImpl implements EntityDefinitionService {
         entityDefinitionRepository.save(entityDefinition);
     }
 
+    @Override
+    public void updateEntityDefinition(UpdateEntityDefinitionRequestDto updateRequest) {
+        EntityDefinition entityDefinition = entityDefinitionRepository.getByName(updateRequest.getName());
+        if (entityDefinition == null) {
+            throw new EntityDefinitionNotFound(updateRequest.getName());
+        }
+        entityDefinition.setDescription(updateRequest.getDescription());
+        entityDefinition.setLastUpdateTime(new Date());
+        for (FieldDefinitionDto fieldDefinitionDto : updateRequest.getFields()) {
+            Optional<FieldDefinition> field = entityDefinition.getFieldByName(fieldDefinitionDto.getName());
+            if (!field.isPresent()) {
+                populateEntityField(entityDefinition, fieldDefinitionDto);
+            }
+        }
+        entityDefinitionRepository.save(entityDefinition);
+    }
+
     private EntityDefinition getEntityDefinitionByName(String entityType) {
         EntityDefinition entityDefinition = entityDefinitionRepository.getByName(entityType);
         if (entityDefinition == null) {
@@ -76,12 +95,13 @@ public class EntityDefinitionServiceImpl implements EntityDefinitionService {
 
     private void populateEntityField(EntityDefinition entityDefinition, FieldDefinitionDto fieldDefinitionToCreate) {
         FieldDefinition fieldDefinition = entityDefinition.addField(fieldDefinitionToCreate.getName(), fieldDefinitionToCreate.getDescription(), fieldDefinitionToCreate.getDataType(), new Date(), fieldDefinitionToCreate.isMandatory(), false);
+        fieldDefinition.setTemplate(fieldDefinitionToCreate.getTemplate());
         if (fieldDefinition.isFieldRepresentingRelationship()) {
-            populateEntityRelationship(entityDefinition, fieldDefinitionToCreate, fieldDefinition);
+            populateEntityRelationship(entityDefinition, fieldDefinitionToCreate);
         }
     }
 
-    private void populateEntityRelationship(EntityDefinition entityDefinition, FieldDefinitionDto fieldDefinitionToCreate, FieldDefinition fieldDefinition) {
+    private void populateEntityRelationship(EntityDefinition entityDefinition, FieldDefinitionDto fieldDefinitionToCreate) {
         EntityRelationshipDefinition representedRelationship = new EntityRelationshipDefinition();
         representedRelationship.setName(fieldDefinitionToCreate.getRepresentedRelationship().getName());
         representedRelationship.setFriendlyName(fieldDefinitionToCreate.getRepresentedRelationship().getFriendlyName());

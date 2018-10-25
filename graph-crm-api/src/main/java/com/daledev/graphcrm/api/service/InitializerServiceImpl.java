@@ -3,6 +3,7 @@ package com.daledev.graphcrm.api.service;
 import com.daledev.graphcrm.api.constants.DataType;
 import com.daledev.graphcrm.api.constants.SystemEntities;
 import com.daledev.graphcrm.api.domain.EntityDefinition;
+import com.daledev.graphcrm.api.domain.FieldDefinition;
 import com.daledev.graphcrm.api.repository.EntityDefinitionRepository;
 import org.springframework.stereotype.Service;
 
@@ -34,6 +35,8 @@ public class InitializerServiceImpl implements InitializerService {
             personEntityDefinition.addField("title", "Persons Title, Mrs, Ms Mr etc...", DataType.TEXT, personEntityDefinition.getCreateTime(), false, true);
             personEntityDefinition.addField("firstName", "Persons First Name", DataType.TEXT, personEntityDefinition.getCreateTime(), true, true);
             personEntityDefinition.addField("lastName", "Persons Last Name", DataType.TEXT, personEntityDefinition.getCreateTime(), true, true);
+            FieldDefinition nameField = personEntityDefinition.addField("name", "Calculated field, persons full name", DataType.TEXT, personEntityDefinition.getCreateTime(), true, true);
+            nameField.setTemplate("${title} ${firstName} ${lastName}");
             personEntityDefinition.addField("dateOfBirth", "Date person was born", DataType.DATE, personEntityDefinition.getCreateTime(), false, true);
             personEntityDefinition.addField("gender", "MALE, FEMALE or UNSPECIFIED", DataType.TEXT, personEntityDefinition.getCreateTime(), false, true);
             entityDefinitionRepository.save(personEntityDefinition);

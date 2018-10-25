@@ -24,6 +24,7 @@ public class FieldDefinition {
     private String name;
     private String description;
     private DataType dataType;
+    private String template;
     private boolean mandatory;
     private boolean systemField;
     private Date createTime;
@@ -63,6 +64,14 @@ public class FieldDefinition {
 
     public boolean isFieldRepresentingRelationship() {
         return dataType == DataType.RELATIONSHIP;
+    }
+
+    public String getTemplate() {
+        return template;
+    }
+
+    public void setTemplate(String template) {
+        this.template = template;
     }
 
     public boolean isMandatory() {

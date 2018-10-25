@@ -11,4 +11,11 @@ public class EntityDefinitionNotFound extends RuntimeException {
     public EntityDefinitionNotFound(String entityType) {
         super("Entity definition not found with type : " + entityType);
     }
+
+    /**
+     * @param definitionId
+     */
+    public EntityDefinitionNotFound(Long definitionId) {
+        super("Entity definition not found with ID : " + definitionId);
+    }
 }
