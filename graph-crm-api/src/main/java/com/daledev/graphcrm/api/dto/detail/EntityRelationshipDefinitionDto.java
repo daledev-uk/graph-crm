@@ -1,8 +1,5 @@
 package com.daledev.graphcrm.api.dto.detail;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * @author dale.ellis
  * @since 11/10/2018
@@ -11,7 +8,7 @@ public class EntityRelationshipDefinitionDto {
     private String name;
     private String friendlyName;
     private String description;
-    private List<String> canRelatedTo = new ArrayList<>();
+    private String canRelatedTo;
 
     public String getFriendlyName() {
         return friendlyName;
@@ -37,11 +34,11 @@ public class EntityRelationshipDefinitionDto {
         this.description = description;
     }
 
-    public List<String> getCanRelatedTo() {
+    public String getCanRelatedTo() {
         return canRelatedTo;
     }
 
-    public void setCanRelatedTo(List<String> canRelatedTo) {
+    public void setCanRelatedTo(String canRelatedTo) {
         this.canRelatedTo = canRelatedTo;
     }
 }

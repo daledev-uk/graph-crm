@@ -11,6 +11,6 @@ public class RelationshipNotAllowed extends RuntimeException {
      * @param entityDefinition
      */
     public RelationshipNotAllowed(EntityDefinition entityDefinition) {
-        super("Entity definition '" + entityDefinition.getName() + "' is not defined to be used on teh given relationship");
+        super("Entity definition '" + entityDefinition.getName() + "' is not defined to be used on the given relationship");
     }
 }

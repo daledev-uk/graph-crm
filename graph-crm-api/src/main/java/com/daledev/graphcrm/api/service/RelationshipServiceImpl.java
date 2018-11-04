@@ -42,9 +42,10 @@ public class RelationshipServiceImpl implements RelationshipService {
         EntityDefinition toEntityDefinition = getEntityDefinitionByEntityUuid(request.getToEntityId());
 
         EntityRelationshipDefinition entityRelationshipDefinition = getValidRelationshipDefinition(request);
-        if (!entityRelationshipDefinition.getRelationshipFrom().equals(fromEntityDefinition)) {
+//TODO - Sort this out
+        /*        if (!entityRelationshipDefinition.getRelationshipFrom().equals(fromEntityDefinition)) {
             throw new RelationshipNotAllowed(fromEntityDefinition);
-        }
+        }*/
         if (entityRelationshipDefinition.isEntityAllowed(toEntityDefinition)) {
             relationshipDao.createRelationship(request.getRelationshipType(), request.getFromEntityId(), request.getToEntityId(), request.getRelationshipAttributes());
         } else {

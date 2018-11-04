@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.voodoodyne.jackson.jsog.JSOGGenerator;
 import org.neo4j.ogm.annotation.*;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
+
+import static org.neo4j.ogm.annotation.Relationship.INCOMING;
 
 /**
  * @author dale.ellis
@@ -26,11 +26,11 @@ public class EntityRelationshipDefinition {
     private Date createTime;
     private Date lastUpdateTime;
 
-    @Relationship(type = "RELATIONSHIP_GOING_FROM")
-    private EntityDefinition relationshipFrom;
+    @Relationship(type = "RELATIONSHIP", direction = INCOMING)
+    private FieldDefinition relationshipFrom;
 
-    @Relationship(type = "RELATIONSHIP_GOING_TO")
-    private List<EntityDefinition> relationshipTo = new ArrayList<>();
+    @Relationship(type = "GOES_TO")
+    private EntityDefinition relationshipTo;
 
     public Long getId() {
         return id;
@@ -88,19 +88,19 @@ public class EntityRelationshipDefinition {
         this.lastUpdateTime = lastUpdateTime;
     }
 
-    public EntityDefinition getRelationshipFrom() {
+    public FieldDefinition getRelationshipFrom() {
         return relationshipFrom;
     }
 
-    public void setRelationshipFrom(EntityDefinition relationshipFrom) {
+    public void setRelationshipFrom(FieldDefinition relationshipFrom) {
         this.relationshipFrom = relationshipFrom;
     }
 
-    public List<EntityDefinition> getRelationshipTo() {
+    public EntityDefinition getRelationshipTo() {
         return relationshipTo;
     }
 
-    public void setRelationshipTo(List<EntityDefinition> relationshipTo) {
+    public void setRelationshipTo(EntityDefinition relationshipTo) {
         this.relationshipTo = relationshipTo;
     }
 
@@ -111,6 +111,6 @@ public class EntityRelationshipDefinition {
      * @return
      */
     public boolean isEntityAllowed(EntityDefinition entityDefinition) {
-        return relationshipTo.contains(entityDefinition);
+        return relationshipTo.equals(entityDefinition);
     }
 }

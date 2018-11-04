@@ -26,4 +26,13 @@ public interface EntityDefinitionRepository extends Neo4jRepository<EntityDefini
     @Query("MATCH (entity {uuid: {0}})-[:METADATA]->(ed:EntityDefinition) RETURN ed")
     EntityDefinition getEntityDefinitionByEntityUuid(String uuid);
 
+    /**
+     *
+     * @param relationshipId
+     * @return
+     */
+    //@Query("MATCH (r:EntityRelationshipDefinition)-[:GOES_TO]->(ed:EntityDefinition) WHERE ID(r) = {0} RETURN ed")
+    @Query("MATCH (r:EntityRelationshipDefinition)-[:GOES_TO]->(ed:EntityDefinition) WHERE ID(r) = {0} WITH ed RETURN ed,[ [ (ed)-[r_f1:`FIELD`]->(f1:`FieldDefinition`) | [ r_f1, f1 ] ] ], ID(ed)")
+    EntityDefinition getEntityDefinitionRelationshipGoesTo(Long relationshipId);
+
 }

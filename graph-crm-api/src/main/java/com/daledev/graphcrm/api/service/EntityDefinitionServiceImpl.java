@@ -97,22 +97,22 @@ public class EntityDefinitionServiceImpl implements EntityDefinitionService {
         FieldDefinition fieldDefinition = entityDefinition.addField(fieldDefinitionToCreate.getName(), fieldDefinitionToCreate.getDescription(), fieldDefinitionToCreate.getDataType(), new Date(), fieldDefinitionToCreate.isMandatory(), false);
         fieldDefinition.setTemplate(fieldDefinitionToCreate.getTemplate());
         if (fieldDefinition.isFieldRepresentingRelationship()) {
-            populateEntityRelationship(entityDefinition, fieldDefinitionToCreate);
+            populateEntityRelationship(fieldDefinition, fieldDefinitionToCreate);
         }
     }
 
-    private void populateEntityRelationship(EntityDefinition entityDefinition, FieldDefinitionDto fieldDefinitionToCreate) {
+    private void populateEntityRelationship(FieldDefinition fieldDefinition, FieldDefinitionDto fieldDefinitionToCreate) {
         EntityRelationshipDefinition representedRelationship = new EntityRelationshipDefinition();
         representedRelationship.setName(fieldDefinitionToCreate.getRepresentedRelationship().getName());
         representedRelationship.setFriendlyName(fieldDefinitionToCreate.getRepresentedRelationship().getFriendlyName());
         representedRelationship.setDescription(fieldDefinitionToCreate.getRepresentedRelationship().getDescription());
         representedRelationship.setCreateTime(new Date());
         representedRelationship.setLastUpdateTime(new Date());
-        representedRelationship.setRelationshipFrom(entityDefinition);
-        for (String relatesToEntityName : fieldDefinitionToCreate.getRepresentedRelationship().getCanRelatedTo()) {
-            representedRelationship.getRelationshipTo().add(getEntityDefinitionByName(relatesToEntityName));
-        }
 
+        representedRelationship.setRelationshipFrom(fieldDefinition);
+        fieldDefinition.setRelationshipDefinition(representedRelationship);
+        representedRelationship.setRelationshipTo(getEntityDefinitionByName(fieldDefinitionToCreate.getRepresentedRelationship().getCanRelatedTo()));
+        
         entityRelationshipDefinitionRepository.save(representedRelationship);
     }
 

@@ -7,7 +7,7 @@ package com.daledev.graphcrm.api.validator;
 public interface AttributeValueValidator {
 
     /**
-     * Validates teh given value is the correct data type
+     * Validates the given value is the correct data type
      *
      * @param value
      */

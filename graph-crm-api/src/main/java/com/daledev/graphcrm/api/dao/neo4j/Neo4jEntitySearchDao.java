@@ -4,21 +4,25 @@ import com.daledev.graphcrm.api.dao.EntitySearchDao;
 import com.daledev.graphcrm.api.dao.neo4j.query.NeoCypherQuery;
 import com.daledev.graphcrm.api.dao.neo4j.query.NeoCypherQueryBuilder;
 import com.daledev.graphcrm.api.dao.neo4j.query.QueryType;
+import com.daledev.graphcrm.api.domain.EntityDefinition;
+import com.daledev.graphcrm.api.domain.EntityRelationshipDefinition;
+import com.daledev.graphcrm.api.domain.FieldDefinition;
 import com.daledev.graphcrm.api.dto.detail.EntityDto;
 import com.daledev.graphcrm.api.dto.response.EntitySearchResultsPageDto;
 import com.daledev.graphcrm.api.dto.search.EntitySearchRequestDto;
 import com.daledev.graphcrm.api.dto.search.SearchCriteriaDto;
 import com.daledev.graphcrm.api.dto.search.SearchResultPageSummaryDto;
+import com.daledev.graphcrm.api.exception.EntityDefinitionFieldNotFound;
+import com.daledev.graphcrm.api.exception.EntityDefinitionNotFound;
+import com.daledev.graphcrm.api.repository.EntityDefinitionRepository;
+import com.daledev.graphcrm.api.repository.EntityRelationshipDefinitionRepository;
 import org.neo4j.ogm.model.Property;
 import org.neo4j.ogm.model.Result;
 import org.neo4j.ogm.response.model.NodeModel;
 import org.neo4j.ogm.session.Session;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author dale.ellis
@@ -28,16 +32,25 @@ import java.util.Map;
 public class Neo4jEntitySearchDao implements EntitySearchDao {
     public static final String ENTITY_ALIAS = "e";
     private Session session;
+    private EntityDefinitionRepository entityDefinitionRepository;
+    private EntityRelationshipDefinitionRepository entityRelationshipDefinitionRepository;
 
-    public Neo4jEntitySearchDao(Session session) {
+    /**
+     * @param session
+     * @param entityDefinitionRepository
+     * @param entityRelationshipDefinitionRepository
+     */
+    public Neo4jEntitySearchDao(Session session, EntityDefinitionRepository entityDefinitionRepository, EntityRelationshipDefinitionRepository entityRelationshipDefinitionRepository) {
         this.session = session;
+        this.entityDefinitionRepository = entityDefinitionRepository;
+        this.entityRelationshipDefinitionRepository = entityRelationshipDefinitionRepository;
     }
 
     @Override
     public EntitySearchResultsPageDto search(EntitySearchRequestDto request) {
         NeoCypherQueryBuilder builder = getBuilderForEntitySearch(request);
-
-        createWhereCondition(request.getSearchCriteria(), builder);
+        validateCriteria(request);
+        createWhereCondition(request.getSearchCriteria(), builder, request.getEntityType());
 
         builder.returnNodes(ENTITY_ALIAS);
         builder.skipFirstNumberOfResults(request.getStartIndex());
@@ -47,17 +60,111 @@ public class Neo4jEntitySearchDao implements EntitySearchDao {
         return executeQuery(cypherQuery, request);
     }
 
-    private void createWhereCondition(SearchCriteriaDto searchCriteria, NeoCypherQueryBuilder builder) {
+    private void createWhereCondition(SearchCriteriaDto searchCriteria, NeoCypherQueryBuilder builder, String entityType) {
         if (searchCriteria != null) {
             List<SearchCriteriaDto> groupedCriteria = searchCriteria.getGroupedCriteria();
             if (groupedCriteria != null && !groupedCriteria.isEmpty()) {
-                builder.subCondition(searchCriteria.getLogicalOperator());
-                for (SearchCriteriaDto subCriteria : groupedCriteria) {
-                    createWhereCondition(subCriteria, builder);
-                }
+                createSubConditionCriteria(searchCriteria, builder, entityType);
             } else {
-                builder.addWhereCondition(ENTITY_ALIAS, searchCriteria.getField(), searchCriteria.getOperator(), searchCriteria.getValue());
+                createSingleCondition(searchCriteria, builder, entityType);
             }
+        }
+    }
+
+    private void createSubConditionCriteria(SearchCriteriaDto searchCriteria, NeoCypherQueryBuilder builder, String entityType) {
+        builder.subCondition(searchCriteria.getLogicalOperator());
+        for (SearchCriteriaDto subConditionCriteria : searchCriteria.getGroupedCriteria()) {
+            createWhereCondition(subConditionCriteria, builder, entityType);
+        }
+    }
+
+    private void createSingleCondition(SearchCriteriaDto searchCriteria, NeoCypherQueryBuilder builder, String entityType) {
+        AliasAndName relationshipAliasAndAttribute = getRelationshipAliasAndAttribute(searchCriteria, builder, entityType);
+        builder.addWhereCondition(relationshipAliasAndAttribute.alias, relationshipAliasAndAttribute.attribute, searchCriteria.getOperator(), searchCriteria.getValue());
+    }
+
+    private AliasAndName getRelationshipAliasAndAttribute(SearchCriteriaDto searchCriteria, NeoCypherQueryBuilder builder, String entityType) {
+        AliasAndName aliasAndName = new AliasAndName();
+        aliasAndName.alias = ENTITY_ALIAS;
+
+        if (entityType == null) {
+            aliasAndName.attribute = searchCriteria.getField();
+            return aliasAndName;
+        }
+
+        String[] fieldParts = searchCriteria.getField().split("\\.");
+        Queue<String> fieldPartQueue = new LinkedList<>(Arrays.asList(fieldParts));
+
+        EntityDefinition entityDefinition = getValidatedEntityDefinition(entityType);
+        int traversalIndex = 0;
+
+        String fieldName = fieldPartQueue.poll();
+        while (fieldName != null) {
+            Optional<FieldDefinition> matchedFieldDefinition = entityDefinition.getFieldByName(fieldName);
+            final EntityDefinition finalEntityDefinition = entityDefinition;
+            final String finalFieldName = fieldName;
+            FieldDefinition fieldDefinition = matchedFieldDefinition.orElseThrow(() -> new EntityDefinitionFieldNotFound(finalEntityDefinition, finalFieldName));
+
+            if (fieldDefinition.isFieldRepresentingRelationship()) {
+                EntityRelationshipDefinition relationship = entityRelationshipDefinitionRepository.getEntityRelationshipDefinitionByField(fieldDefinition.getId());
+                entityDefinition = entityDefinitionRepository.getEntityDefinitionRelationshipGoesTo(relationship.getId());
+                String relationshipAlias = "r" + traversalIndex;
+                aliasAndName.alias = "e" + traversalIndex;
+                builder.relationshipFromWithLabel(relationship.getName(), relationshipAlias);
+                builder.nodeWithLabel(entityDefinition.getName(), aliasAndName.alias);
+                aliasAndName.attribute = "name";
+            } else {
+                aliasAndName.attribute = fieldName;
+            }
+
+            fieldName = fieldPartQueue.poll();
+        }
+
+        return aliasAndName;
+    }
+
+    private void validateCriteria(EntitySearchRequestDto request) {
+        if (request.getEntityType() != null) {
+            EntityDefinition entityDefinition = getValidatedEntityDefinition(request.getEntityType());
+            for (String fieldName : getAllCriteriaFields(request.getSearchCriteria())) {
+                validateField(entityDefinition, fieldName);
+            }
+        }
+    }
+
+    private EntityDefinition getValidatedEntityDefinition(String entityType) {
+        EntityDefinition entityDefinition = entityDefinitionRepository.getByName(entityType);
+        if (entityDefinition == null) {
+            throw new EntityDefinitionNotFound(entityType);
+        }
+        return entityDefinition;
+    }
+
+    private Set<String> getAllCriteriaFields(SearchCriteriaDto searchCriteria) {
+        Set<String> fields = new LinkedHashSet<>();
+        populateCriteriaFields(fields, searchCriteria);
+        return fields;
+    }
+
+    private void populateCriteriaFields(Set<String> fields, SearchCriteriaDto searchCriteria) {
+        if (searchCriteria.getField() != null) {
+            fields.add(searchCriteria.getField());
+        } else if (searchCriteria.getGroupedCriteria() != null) {
+            for (SearchCriteriaDto subCriteria : searchCriteria.getGroupedCriteria()) {
+                populateCriteriaFields(fields, subCriteria);
+            }
+        }
+    }
+
+    private void validateField(EntityDefinition entityDefinition, String fieldName) {
+        String[] fieldParts = fieldName.split("\\.");
+        Optional<FieldDefinition> matchedFieldDefinition = entityDefinition.getFieldByName(fieldParts[0]);
+        FieldDefinition fieldDefinition = matchedFieldDefinition.orElseThrow(() -> new EntityDefinitionFieldNotFound(entityDefinition, fieldParts[0]));
+
+        if (fieldDefinition.isFieldRepresentingRelationship() && fieldParts.length > 1) {
+            EntityRelationshipDefinition relationship = entityRelationshipDefinitionRepository.getEntityRelationshipDefinitionByField(fieldDefinition.getId());
+            EntityDefinition relationshipGoesToEntityDefinition = entityDefinitionRepository.getEntityDefinitionRelationshipGoesTo(relationship.getId());
+            validateField(relationshipGoesToEntityDefinition, fieldName.substring(fieldName.indexOf('.') + 1));
         }
     }
 
@@ -141,5 +248,10 @@ public class Neo4jEntitySearchDao implements EntitySearchDao {
         Result countResult = session.query(cypherQuery.getCountQuery(), cypherQuery.getParameters());
         Object singleResult = countResult.iterator().next().get("count(e)");
         return ((Long) singleResult).intValue();
+    }
+
+    private class AliasAndName {
+        private String alias;
+        private String attribute;
     }
 }

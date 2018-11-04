@@ -3,12 +3,11 @@ package com.daledev.graphcrm.api.domain;
 import com.daledev.graphcrm.api.constants.DataType;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.voodoodyne.jackson.jsog.JSOGGenerator;
-import org.neo4j.ogm.annotation.GeneratedValue;
-import org.neo4j.ogm.annotation.Id;
-import org.neo4j.ogm.annotation.Index;
-import org.neo4j.ogm.annotation.NodeEntity;
+import org.neo4j.ogm.annotation.*;
 
 import java.util.Date;
+
+import static org.neo4j.ogm.annotation.Relationship.OUTGOING;
 
 /**
  * @author dale.ellis
@@ -29,6 +28,8 @@ public class FieldDefinition {
     private boolean systemField;
     private Date createTime;
     private Date lastUpdateTime;
+    @Relationship(type = "RELATIONSHIP", direction = OUTGOING)
+    private EntityRelationshipDefinition relationshipDefinition;
 
     public Long getId() {
         return id;
@@ -104,5 +105,13 @@ public class FieldDefinition {
 
     public void setLastUpdateTime(Date lastUpdateTime) {
         this.lastUpdateTime = lastUpdateTime;
+    }
+
+    public EntityRelationshipDefinition getRelationshipDefinition() {
+        return relationshipDefinition;
+    }
+
+    public void setRelationshipDefinition(EntityRelationshipDefinition relationshipDefinition) {
+        this.relationshipDefinition = relationshipDefinition;
     }
 }
